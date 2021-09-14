@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astrolabium"
+version = "0.1.0"
+description = "Astronomy, geometry and the astrolabe reconstructed in software."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Loren", email = "loren@example.com" }
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "astropy>=5.0",
+    "svgwrite>=1.4.3",
+    "typer>=0.9.0",
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black",
+    "isort",
+    "mypy"
+]
+
+[project.scripts]
+astrolabium = "astrolabium.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]

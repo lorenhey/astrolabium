@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Astrolabium Simulator</title>
+    <style>
+        body {
+            background-color: #f4f1ea;
+            font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #2c2c2c;
+        }
+        #astrolabe-container {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            background: #fffdf7;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: center center;
+            pointer-events: none; /* Let the container handle interaction for now */
+        }
+        #mater-layer { z-index: 1; }
+        #tympan-layer { z-index: 2; }
+        #rete-layer { z-index: 3; opacity: 0.8; mix-blend-mode: multiply; pointer-events: auto; cursor: grab;}
+        #rule-layer { z-index: 4; pointer-events: auto; cursor: grab;}
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        label { font-size: 14px; }
+        input[type="range"] { width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>ASTROLABIUM</h1>
+    <p>Astronomy, geometry and the astrolabe reconstructed in software.</p>
+    
+    <div id="astrolabe-container">
+        <!-- We will inject the SVG content here -->
+        <object id="mater-layer" class="layer" type="image/svg+xml" data="../build/astrolabe_greenwich/mater.svg"></object>
+        <object id="tympan-layer" class="layer" type="image/svg+xml" data="../build/astrolabe_greenwich/tympan.svg"></object>
+        <object id="rete-layer" class="layer" type="image/svg+xml" data="../build/astrolabe_greenwich/rete.svg"></object>
+        <object id="rule-layer" class="layer" type="image/svg+xml" data="../build/astrolabe_greenwich/rule.svg"></object>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label>Rete Rotation: <span id="rete-val">0</span>°</label><br>
+            <input type="range" id="rete-slider" min="0" max="360" value="0">
+        </div>
+        <div>
+            <label>Rule Rotation: <span id="rule-val">0</span>°</label><br>
+            <input type="range" id="rule-slider" min="0" max="360" value="0">
+        </div>
+    </div>
+
+    <script>
+        const rete = document.getElementById('rete-layer');
+        const rule = document.getElementById('rule-layer');
+        const reteSlider = document.getElementById('rete-slider');
+        const ruleSlider = document.getElementById('rule-slider');
+        const reteVal = document.getElementById('rete-val');
+        const ruleVal = document.getElementById('rule-val');
+
+        reteSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            rete.style.transform = otate( + val + deg);
+            reteVal.innerText = val;
+        });
+
+        ruleSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            rule.style.transform = otate( + val + deg);
+            ruleVal.innerText = val;
+        });
+    </script>
+</body>
+</html>

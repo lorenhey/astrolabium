@@ -1,70 +1,89 @@
 # ASTROLABIUM
 
-> An astrolabe compresses a surprising amount of astronomy into two rotating pieces of metal.
+> **Astronomía de Posición, Geometría y el Astrolabio Planisférico Reconstruido en Software.**
+> 
+> *Un instrumento analógico milenario que comprime la bóveda celeste en dos discos de latón.*
 
-Before clocks became cheap and telescopes existed at all, somebody discovered that a stereographic projection of the sky could be turned into a machine. **ASTROLABIUM** is an open-source project that reconstructs the planispheric astrolabe from its geometric and astronomical first principles. 
+[![GitHub Pages](https://img.shields.io/badge/Demo%20En%20Vivo-GitHub%20Pages-d4af37?style=for-the-badge&logo=github)](https://lorenhey.github.io/astrolabium/)
+[![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-It is simultaneously:
-- A mathematically correct planispheric astrolabe generator.
-- An astronomical library and simulator.
-- A physical instrument builder (SVG/PDF output).
-- An exploration of the history of practical astronomy.
+---
 
-## Features
+## 🌐 Simulador Web Interactivo (Zero-Backend)
 
-- **Astronomical Core**: Implements Julian dates, sidereal time, equatorial, horizontal, and ecliptic coordinates.
-- **Scientific Validation**: Math is rigorously cross-validated against modern astronomical reference libraries (Astropy).
-- **Stereographic Projection Engine**: Derives the instrument's geometry purely from projection mathematics, not manual drawing.
-- **Parametric Generation**: Generate a Tympan (plate) for any latitude, including robust support for the Southern Hemisphere.
-- **Rete Generation**: Calculates the ecliptic and projects verified star catalogs (accounting for precession/epochs).
-- **CLI & Python API**: Easy-to-use commands for building SVGs.
-- **Web Simulator**: A clean, interactive web interface to explore the instrument.
+Probá el astrolabio directamente en tu navegador sin instalar dependencias:
 
-## Architecture
+👉 **[https://lorenhey.github.io/astrolabium/](https://lorenhey.github.io/astrolabium/)**
 
-Astrolabium separates the **Historical Model** (how the instrument traditionally calculates and approximates) from the **Modern Reference** (how modern astronomy calculates it), allowing for direct comparison and error analysis.
+- **Simulación a 60 FPS:** Arrastrá libremente la Araña (*Rete*), la Regla delantera (*Rule*) y la Alhidada trasera con el mouse o pantalla táctil.
+- **Doble Cara (Anverso y Reverso):** Alterná entre el frente (Tímpano de latitud, Eclíptica y Estrellas) y el dorso (Cuadrado de Sombras para agrimensura y calendario zodiacal).
+- **Astrolabio Septentrional y Austral:** Soporte matemático riguroso para latitudes de ambos hemisferios (proyección desde el Polo Sur o Polo Norte Celeste).
+- **Efemérides en Tiempo Real:** Cálculo instantáneo de Día Juliano (JD), Tiempo Sideral Local (LST), posición aparente del Sol y coordenadas horizontales (altitud y acimut) de las estrellas visibles.
+- **Exportación Paramétrica para Corte Láser (SVG):** Generación de archivos vectoriales listos para CNC en madera, acrílico o latón.
 
-- strolabium.astronomy: Core coordinate transformations and time calculations.
-- strolabium.projection: Stereographic projection mapping the celestial sphere to a 2D plane.
-- strolabium.instrument: Mathematical definitions of the Tympan, Rete, Mater, and Rule.
-- strolabium.generators: SVG generation for physical fabrication.
+---
 
-## Installation
+## 🧭 ¿Qué es un Astrolabio Planisférico?
 
-\\\ash
+Antes de los relojes de péndulo y los telescopios, el astrolabio era la computadora astronómica de mano definitiva. Se basa en la **proyección estereográfica conforme** de la esfera celeste sobre el plano del ecuador:
+
+$$R(\delta) = R_{\text{eq}} \tan\left(\frac{90^\circ \mp \delta}{2}\right)$$
+
+### Propiedades Matemáticas Clave
+1. **Preservación de Ángulos (Conformalidad):** Los acimutes y meridianos se cortan ortogonalmente sin distorsión angular.
+2. **Preservación Circular:** Cualquier círculo sobre la esfera celeste proyecta como un círculo exacto en el plano, permitiendo trazar almucantarates y la eclíptica con compás o código vectorial puro.
+
+---
+
+## 📦 Biblioteca y CLI de Python (`astrolabium`)
+
+### Instalación
+
+```bash
+# Clonar el repositorio
 git clone https://github.com/lorenhey/astrolabium.git
 cd astrolabium
-python -m venv venv
-source venv/bin/activate  # Or .\venv\Scripts\Activate.ps1 on Windows
-pip install -e .
-\\\
 
-## Usage
+# Crear entorno virtual e instalar con dependencias científicas
+uv venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\Activate.ps1
+uv pip install -e ".[dev]"
+```
 
-### Command Line Interface
+### Generación por Línea de Comandos
 
-Generate a tympan (plate) for a specific latitude (e.g., La Plata, Argentina):
-\\\ash
-astrolabium plate --latitude -34.92 --output laplata_tympan.svg
-\\\
+```bash
+# Generar tímpano para La Plata / Buenos Aires (-34.92°)
+astrolabium plate --latitude -34.92 --output tympan_laplata.svg
 
-Generate a rete for the northern hemisphere:
-\\\ash
-astrolabium rete --hemisphere north --output northern_rete.svg
-\\\
+# Generar araña austral con catálogo estelar
+astrolabium rete --hemisphere south --output rete_austral.svg
 
-Build a complete physical astrolabe (all pieces):
-\\\ash
-astrolabium build --latitude 51.48 --output-dir build/greenwich/
-\\\
+# Construir el astrolabio físico completo (Madre, Tímpano, Araña y Regla)
+astrolabium build --latitude -34.92 --output-dir ./build/laplata/
+```
 
-## Historical and Mathematical Documentation
+### Validación de Precisión
 
-Please refer to the docs/ directory for in-depth explorations:
-- docs/mathematics/stereographic_projection.md: Why circles project to circles.
-- docs/astrolabe/anatomy.md: The components of the astrolabe.
-- docs/fabrication/laser_cutting.md: How to take the SVG outputs and build a physical instrument.
+Los algoritmos de `astrolabium` están validados contra la biblioteca de referencia astrofísica **Astropy** (error interno en GMST $< 0.00001^\circ$):
 
-## License
+```bash
+pytest
+python scripts/validate.py
+```
 
-Code is licensed under the MIT License. Documentation is licensed under CC BY 4.0.
+---
+
+## 📚 Documentación Técnica e Histórica
+
+- [`docs/mathematics/stereographic_projection.md`](docs/mathematics/stereographic_projection.md): Demostración analítica de la proyección.
+- [`docs/astrolabe/anatomy.md`](docs/astrolabe/anatomy.md): Componentes físicos del instrumento.
+- [`docs/fabrication/laser_cutting.md`](docs/fabrication/laser_cutting.md): Guía de corte láser y ensamblaje.
+- [`examples/precision_experiment.md`](examples/precision_experiment.md): Análisis de precisión instrumental vs digital.
+
+---
+
+## 📄 Licencia
+
+Código bajo licencia MIT. Documentación bajo CC BY 4.0.

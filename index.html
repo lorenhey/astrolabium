@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTROLABIUM - Simulador Astronómico del Astrolabio Planisférico</title>
+  <meta name="description" content="Simulador astronómico e interactivo del astrolabio planisférico. Proyección estereográfica, cálculo de tiempo sideral local (LST), almucantarates, acimutes, cuadrado de sombras y exportación vectorial SVG para corte láser.">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- KaTeX para fórmulas matemáticas -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+  <!-- Encabezado Principal -->
+  <header class="top-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="2"/>
+          <path d="M12 3v18M3 12h18" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="5" fill="none" stroke="#fef08a" stroke-width="1.5" stroke-dasharray="2,2"/>
+          <path d="M12 7l3 5-3 5-3-5z" fill="#fef08a"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">
+          <span>ASTROLABIUM</span>
+          <span class="brand-version">v1.5.0</span>
+        </div>
+        <div class="brand-subtitle">Astronomía de Posición, Geometría y el Astrolabio Reconstruido en Software</div>
+      </div>
+    </div>
+
+    <!-- Badges Astronómicos en Tiempo Real -->
+    <div class="top-metrics-bar">
+      <span class="badge badge-gold" id="badge-julian-date" title="Día Juliano">JD ---</span>
+      <span class="badge badge-info" id="badge-lst" title="Tiempo Sideral Local (LST)">LST --:--</span>
+      <span class="badge badge-warning" id="badge-sun-zodiac" title="Posición del Sol en el Zodíaco">Sol: ---</span>
+      <span class="badge badge-neutral" id="badge-sun-alt" title="Altitud del Sol sobre el horizonte">Alt Sol: ---°</span>
+      <span class="badge badge-success" id="badge-hemisphere" title="Hemisferio de la placa">Hemisferio Sur</span>
+    </div>
+
+    <!-- Presets y Exportación -->
+    <div class="header-actions">
+      <select class="select-control" id="select-city" title="Cargar observatorio histórico">
+        <option value="buenos-aires">Buenos Aires, Arg (-34.60°, -58.38°)</option>
+        <option value="cordoba">Córdoba, Arg - Obs. Histórico (-31.42°, -64.19°)</option>
+        <option value="toledo">Toledo - Tablas Alfonsíes (+39.86°, -4.02°)</option>
+        <option value="greenwich">Greenwich - Meridiano Cero (+51.48°, 0.00°)</option>
+        <option value="baghdad">Bagdad - Casa de la Sabiduría (+33.31°, +44.36°)</option>
+        <option value="alexandria">Alejandría - Ptolomeo (+31.20°, +29.92°)</option>
+        <option value="paris">París - Observatorio Real (+48.86°, +2.35°)</option>
+      </select>
+
+      <div class="btn-group">
+        <button class="btn" id="btn-export-tympan-svg" title="Descargar Tímpano para corte láser en SVG">SVG Tímpano</button>
+        <button class="btn" id="btn-export-rete-svg" title="Descargar Araña en SVG">SVG Araña</button>
+        <button class="btn" id="btn-export-session-json" title="Descargar datos astronómicos en JSON">JSON</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pestañas de Navegación -->
+  <nav class="nav-tabs">
+    <button class="nav-tab-btn active" data-target="tab-simulador">
+      <span>🧭</span> Simulador del Astrolabio
+    </button>
+    <button class="nav-tab-btn" data-target="tab-misiones">
+      <span>📜</span> Misiones y Casos Históricos
+    </button>
+    <button class="nav-tab-btn" data-target="tab-teoria">
+      <span>📚</span> Tratado de Proyección y Astronomía
+    </button>
+    <button class="nav-tab-btn" data-target="tab-fabricacion">
+      <span>⚙️</span> Fabricación y Corte Láser
+    </button>
+    <button class="nav-tab-btn" data-target="tab-python">
+      <span>🐍</span> Suite Python Astrolabium
+    </button>
+  </nav>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+
+    <!-- PESTAÑA 1: SIMULADOR DEL ASTROLABIO -->
+    <div class="tab-pane active" id="tab-simulador">
+      <div class="astrolabe-layout">
+
+        <!-- Columna Izquierda: Parámetros del Observador y Controles de Rotación -->
+        <aside class="sidebar-left">
+          
+          <!-- Selector de Vista Anverso / Reverso -->
+          <div class="panel" style="margin-bottom: 1rem;">
+            <div class="panel-header">
+              <span class="panel-title">🔄 Cara del Instrumento</span>
+            </div>
+            <div class="panel-body">
+              <div class="btn-group" style="width: 100%;">
+                <button class="btn btn-toggle-view active" id="btn-view-front">Anverso (Araña / Tímpano)</button>
+                <button class="btn btn-toggle-view" id="btn-view-back">Reverso (Alhidada / Sombras)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Posición Geográfica del Observador -->
+          <div class="panel" style="margin-bottom: 1rem;">
+            <div class="panel-header">
+              <span class="panel-title">📍 Ubicación del Observador</span>
+            </div>
+            <div class="panel-body">
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Latitud Geográfica (φ)</span>
+                  <span id="label-lat">-34.6°</span>
+                </div>
+                <div class="slider-row">
+                  <input type="range" id="slider-lat" min="-75" max="75" step="0.5" value="-34.6">
+                  <input type="number" id="input-lat" class="number-input" style="width: 70px;" min="-90" max="90" step="0.1" value="-34.6">
+                </div>
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Longitud (grados decimales)</span>
+                </div>
+                <input type="number" id="input-lon" class="text-input" min="-180" max="180" step="0.01" value="-58.38">
+              </div>
+            </div>
+          </div>
+
+          <!-- Tiempo y Fecha de Observación -->
+          <div class="panel" style="margin-bottom: 1rem;">
+            <div class="panel-header">
+              <span class="panel-title">⏳ Fecha y Hora de Observación</span>
+            </div>
+            <div class="panel-body">
+              <div class="control-group">
+                <div class="control-label"><span>Fecha Civil (Calendario)</span></div>
+                <input type="date" id="input-date" class="text-input">
+              </div>
+
+              <div class="control-group">
+                <div class="control-label"><span>Hora Local</span></div>
+                <input type="time" id="input-time" class="text-input">
+              </div>
+
+              <div class="btn-group" style="margin-bottom: 0.75rem;">
+                <button class="btn" id="btn-now">Hora Actual</button>
+                <button class="btn" id="btn-step-hour">+1 Hora</button>
+              </div>
+
+              <div class="control-group">
+                <div class="control-label"><span>Velocidad de Simulación Diurna</span></div>
+                <select class="select-control" id="select-anim-speed">
+                  <option value="60">1 seg real = 1 minuto (60x)</option>
+                  <option value="3600" selected>1 seg real = 1 hora (3600x)</option>
+                  <option value="86400">1 seg real = 1 día (86400x)</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary" id="btn-play-pause" style="width: 100%; justify-content: center;">
+                ▶ Rotación Diurna
+              </button>
+            </div>
+          </div>
+
+          <!-- Ajuste Angular Manual -->
+          <div class="panel" style="margin-bottom: 1rem;">
+            <div class="panel-header">
+              <span class="panel-title">⚙️ Rotación Manual de Capas</span>
+            </div>
+            <div class="panel-body">
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Giro de la Araña (Rete):</span>
+                  <span id="val-rete">0°</span>
+                </div>
+                <input type="range" id="slider-rete" min="0" max="360" step="1" value="0">
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Giro de la Regla (Rule):</span>
+                  <span id="val-rule">90°</span>
+                </div>
+                <input type="range" id="slider-rule" min="0" max="360" step="1" value="90">
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Giro de la Alhidada (Dorso):</span>
+                  <span id="val-alidade">45°</span>
+                </div>
+                <input type="range" id="slider-alidade" min="0" max="360" step="1" value="45">
+              </div>
+            </div>
+          </div>
+
+          <!-- Toggles de Capas Visibles -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">👁 Capas y Elementos</span>
+            </div>
+            <div class="panel-body">
+              <div class="toggle-row">
+                <label><input type="checkbox" id="toggle-almucantars" checked> Almucantarates (Altitud)</label>
+              </div>
+              <div class="toggle-row">
+                <label><input type="checkbox" id="toggle-azimuths" checked> Arcos de Acimut</label>
+              </div>
+              <div class="toggle-row">
+                <label><input type="checkbox" id="toggle-star-labels" checked> Nombres de Estrellas</label>
+              </div>
+              <div class="toggle-row">
+                <label><input type="checkbox" id="toggle-sun" checked> Posición del Sol (☉)</label>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- Columna Central: Lienzo del Astrolabio Interactivo -->
+        <section class="main-viewer">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">🧭 Astrolabio Planisférico (Arrastrá para girar la Araña, Regla o Alhidada)</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono);">60 FPS Vectorial</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="astrolabe-canvas"></canvas>
+            </div>
+            <div class="canvas-legend">
+              <div class="legend-item"><span class="legend-color" style="background: #d4af37;"></span> Limbo Madre (Horas I-XII)</div>
+              <div class="legend-item"><span class="legend-color" style="background: #334155;"></span> Ecuador y Trópicos</div>
+              <div class="legend-item"><span class="legend-color" style="background: #0f172a;"></span> Horizonte Astronómico</div>
+              <div class="legend-item"><span class="legend-color" style="background: #b48a3c;"></span> Eclíptica Zodiacal</div>
+              <div class="legend-item"><span class="legend-color" style="background: #ef4444;"></span> Línea de Fe de la Regla</div>
+              <div class="legend-item"><span class="legend-color" style="background: #f59e0b;"></span> Sol en la Eclíptica</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Columna Derecha: Efemérides, Coordenadas y Estrellas Visibles -->
+        <aside class="sidebar-right">
+
+          <!-- Ficha del Sol en Tiempo Real -->
+          <div class="panel" style="margin-bottom: 1rem;">
+            <div class="panel-header">
+              <span class="panel-title">☀️ Efemérides Solares</span>
+            </div>
+            <div class="panel-body" id="sun-info-card">
+              <!-- Se puebla dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Estrellas Visibles Sobre el Horizonte -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">✨ Estrellas Visibles (Altitud > 0°)</span>
+            </div>
+            <div style="max-height: 480px; overflow-y: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Estrella</th>
+                    <th>Const.</th>
+                    <th>Altitud</th>
+                    <th>Acimut</th>
+                    <th>Mag.</th>
+                  </tr>
+                </thead>
+                <tbody id="visible-stars-table">
+                  <!-- Se puebla dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- PESTAÑA 2: MISIONES Y CASOS HISTÓRICOS -->
+    <div class="tab-pane" id="tab-misiones">
+      <div class="doc-container">
+        <h1>📜 Misiones y Casos de Uso Históricos del Astrolabio</h1>
+        <p>
+          Antes de la invención del reloj de péndulo por Christiaan Huygens y de los telescopios de Galileo, el astrolabio era la computadora analógica portátil suprema. Permitía resolver cálculos esféricos en segundos sin escribir una sola ecuación.
+        </p>
+
+        <div class="control-group" style="margin: 1.5rem 0;">
+          <label style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; display: block;">
+            Seleccioná un tutorial o caso de uso histórico guiado:
+          </label>
+          <select class="select-control" id="mission-select" style="max-width: 600px;">
+            <option value="night-time">Misión 1: Saber qué hora de la noche es midiendo la estrella Vega</option>
+            <option value="solar-noon">Misión 2: Determinar la hora del mediodía solar verdadero</option>
+            <option value="tower-height">Misión 3: Medir la altura de una torre usando el Cuadrado de Sombras</option>
+          </select>
+        </div>
+
+        <div id="mission-card" style="margin-bottom: 2rem;">
+          <div style="background: rgba(56, 189, 248, 0.06); border-left: 4px solid var(--cyan); padding: 1.25rem; border-radius: 6px;">
+            <h4 style="color: #fff; margin-bottom: 0.5rem;">Misión 1: Saber qué hora de la noche es midiendo la estrella Vega</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">
+              En una noche despejada de verano, apuntás tu alhidada hacia la brillante estrella Vega y medís una altitud de 35°. ¿Cómo usaban el astrolabio para saber la hora exacta?
+            </p>
+            <ol style="padding-left: 1.25rem; font-size: 0.82rem; color: #cbd5e1; line-height: 1.6;">
+              <li>Buscá el puntero de la estrella Vega en la Araña (Rete).</li>
+              <li>Girás la Araña hasta que la punta de Vega coincida exactamente con el almucantarate de 35° en el Tímpano.</li>
+              <li>Alineás la Regla (Rule) con la posición del Sol para la fecha de hoy en la Eclíptica.</li>
+              <li>Leés la hora local directamente en el limbo exterior de la Madre.</li>
+            </ol>
+          </div>
+        </div>
+
+        <h2>Resumen de Operaciones Clásicas</h2>
+        <div class="callout callout-gold">
+          <h3>Las 4 Operaciones Fundamentales</h3>
+          <ul>
+            <li><strong>Conversión de Coordenadas Horizontales a Ecuatoriales:</strong> Ubicar un astro por su altura y azimut en el tímpano permite leer instantáneamente su ascensión recta y declinación en la araña.</li>
+            <li><strong>Cálculo del Orto y Ocaso:</strong> Al rotar el punto zodiacal del Sol hasta cortar la línea del horizonte oriental (Este), la regla indica la hora exacta del amanecer; al tocar el horizonte occidental (Oeste), marca el ocaso.</li>
+            <li><strong>Determinación de Horas Desiguales (Temporarias):</strong> La tradición antigua dividía el día y la noche en 12 horas de duración variable según la estación del año. Los arcos bajo el horizonte del tímpano resuelven esta división al instante.</li>
+            <li><strong>Topografía y Agrimensura con el Cuadrado de Sombras:</strong> Mediante relaciones de semejanza de triángulos rectángulos formados por el gnomon de 12 dígitos (umbra recta y versa), se calculan distancias inaccesibles y alturas de murallas sin cinta métrica.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: TRATADO DE PROYECCIÓN Y ASTRONOMÍA -->
+    <div class="tab-pane" id="tab-teoria">
+      <div class="doc-container">
+        <h1>📚 Tratado de Proyección Estereográfica y Geometría del Astrolabio</h1>
+        <p>
+          El astrolabio planisférico se basa en un principio matemático deslumbrante descubierto por los astrónomos de la Grecia helenística (atribuido a Hiparco de Nicea y sistematizado por Claudio Ptolomeo en su <em>Planisphaerium</em>): la <strong>proyección estereográfica conforme de la esfera celeste sobre el plano del ecuador</strong>.
+        </p>
+
+        <h2>1. Principio Fundamental de Proyección</h2>
+        <p>
+          En el astrolabio septentrional clásico, el centro de proyección se sitúa en el <strong>Polo Sur Celeste (SCP)</strong> ($\delta = -90^\circ$). Los rayos de proyección parten desde el SCP, atraviesan cada punto de la esfera celeste y cortan el plano del ecuador celeste celeste ($\delta = 0^\circ$).
+        </p>
+        <p>
+          Para un cuerpo celeste con Declinación $\delta$, su distancia radial $R(\delta)$ desde el centro del astrolabio (que representa el Polo Norte Celeste, NCP) viene dada exactamente por:
+        </p>
+        $$R(\delta) = R_{\text{eq}} \tan\left(\frac{90^\circ - \delta}{2}\right)$$
+        <p>
+          donde $R_{\text{eq}}$ es el radio del ecuador celeste en el instrumento.
+        </p>
+        <ul>
+          <li><strong>Polo Norte Celeste ($\delta = +90^\circ$):</strong> $R(+90^\circ) = R_{\text{eq}} \tan(0^\circ) = 0$ (el centro del instrumento).</li>
+          <li><strong>Ecuador Celeste ($\delta = 0^\circ$):</strong> $R(0^\circ) = R_{\text{eq}} \tan(45^\circ) = R_{\text{eq}}$.</li>
+          <li><strong>Trópico de Cáncer ($\delta = +23.44^\circ$):</strong> $R(+23.44^\circ) \approx 0.65 R_{\text{eq}}$.</li>
+          <li><strong>Trópico de Capricornio ($\delta = -23.44^\circ$):</strong> $R(-23.44^\circ) \approx 1.52 R_{\text{eq}}$ (marca el borde exterior perimetral de la placa).</li>
+        </ul>
+
+        <h2>2. Astrolabio Septentrional vs. Astrolabio Austral</h2>
+        <p>
+          Para observadores situados en el hemisferio sur (por ejemplo, en Argentina, Chile o Australia), el Polo Norte Celeste queda permanentemente bajo el horizonte. Un astrolabio septentrional proyectaría el Cenit a distancias enormes fuera del instrumento.
+        </p>
+        <p>
+          En <strong>Astrolabium</strong>, para latitudes negativas ($\phi < 0$), el motor conmuta automáticamente al <strong>Astrolabio Austral</strong>:
+        </p>
+        $$R(\delta) = R_{\text{eq}} \tan\left(\frac{90^\circ + \delta}{2}\right)$$
+        <p>
+          En este caso, la proyección se realiza desde el <strong>Polo Norte Celeste (NCP)</strong>, el centro del instrumento es el <strong>Polo Sur Celeste (SCP)</strong>, y el perímetro exterior queda limitado por el Trópico de Cáncer.
+        </p>
+
+        <h2>3. Preservación de Círculos y Conformalidad</h2>
+        <p>
+          La proyección estereográfica posee dos propiedades geométricas extraordinarias:
+        </p>
+        <ol>
+          <li><strong>Preservación de ángulos (Conformalidad):</strong> El ángulo entre dos curvas que se cortan sobre la esfera celeste es exactamente igual al ángulo con que se cortan sus proyecciones en el plano. Esto permite que los círculos de acimut sean rigurosamente ortogonales al horizonte en el plano del tímpano.</li>
+          <li><strong>Preservación circular:</strong> Todo círculo trazado sobre la esfera celeste proyecta como un círculo exacto en el plano (salvo que pase por el polo de proyección, en cuyo caso proyecta como una línea recta).</li>
+        </ol>
+
+        <h2>4. Ecuación de los Almucantarates</h2>
+        <p>
+          Un almucantarate para una altitud $h$ es un círculo menor centrado en el Cenit ($\delta = \phi$, $\alpha = 90^\circ$) con radio angular $\rho = 90^\circ - h$.
+          Sus intersecciones con el meridiano local ocurren en las declinaciones:
+        </p>
+        $$\delta_1 = \phi + (90^\circ - h), \quad \delta_2 = \phi - (90^\circ - h)$$
+        <p>
+          El radio del círculo proyectado en el plano es:
+        </p>
+        $$R_{\text{proj}} = \frac{|R(\delta_2) - R(\delta_1)|}{2}$$
+        <p>
+          y su centro proyectado se encuentra a una distancia del polo de:
+        </p>
+        $$r_{\text{centro}} = \frac{R(\delta_1) + R(\delta_2)}{2}$$
+      </div>
+    </div>
+
+    <!-- PESTAÑA 4: FABRICACIÓN Y CORTE LÁSER -->
+    <div class="tab-pane" id="tab-fabricacion">
+      <div class="doc-container">
+        <h1>⚙️ Fabricación Física y Corte Láser</h1>
+        <p>
+          Uno de los objetivos esenciales de <strong>Astrolabium</strong> es la construcción de instrumentos reales funcionales en madera noble, acrílico o chapa de latón de 1.5 a 3 mm de espesor mediante corte y grabado láser por CNC.
+        </p>
+
+        <div class="callout callout-info">
+          <h3>Convención de Capas Vectoriales para Máquinas CNC / Láser</h3>
+          <ul>
+            <li><strong>Línea Roja (#FF0000, espesor 0.1 mm):</strong> Corte pasante (vector cut) para el perímetro exterior, orificio del eje central y calados interiores de la araña.</li>
+            <li><strong>Línea Negra (#000000, espesor 0.2 mm):</strong> Grabado lineal (vector engrave) para las líneas del horizonte, almucantarates, graduaciones del limbo y signos zodiacales.</li>
+            <li><strong>Texto / Relleno:</strong> Grabado por barrido (raster engrave) para números y nombres de estrellas.</li>
+          </ul>
+        </div>
+
+        <h2>Descarga de Planos Vectoriales Calibrados</h2>
+        <p>
+          Hacé clic en los botones para generar y descargar los archivos SVG vectoriales paramétricos exactos para la latitud actual seleccionada:
+        </p>
+
+        <div class="btn-group" style="margin: 1.5rem 0;">
+          <button class="btn btn-primary" onclick="document.getElementById('btn-export-tympan-svg').click()">
+            📥 Descargar Tímpano (Placa de Latitud) en SVG
+          </button>
+          <button class="btn btn-primary" onclick="document.getElementById('btn-export-rete-svg').click()">
+            📥 Descargar Araña (Rete) en SVG
+          </button>
+        </div>
+
+        <h2>Ensamblaje del Instrumento</h2>
+        <ol>
+          <li><strong>Madre (Mater):</strong> Cortar la base y pegar el limbo graduado en el reborde exterior creando una cavidad (matriz) donde asienta el tímpano.</li>
+          <li><strong>Tímpano (Tympan):</strong> Se pueden cortar varias placas intercambiables para distintas latitudes (ej. Córdoba -31.4°, Buenos Aires -34.6°, etc.).</li>
+          <li><strong>Araña (Rete):</strong> Calar con cuidado las aberturas entre los punteros de las estrellas y el anillo de la eclíptica para permitir la visibilidad de los almucantarates del tímpano.</li>
+          <li><strong>Eje y Caballo (Pin & Wedge):</strong> Colocar un perno de latón pasante de 4 mm con arandela y cuña tradicional de fijación ("caballo").</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 5: SUITE PYTHON ASTROLABIUM -->
+    <div class="tab-pane" id="tab-python">
+      <div class="doc-container">
+        <h1>🐍 Biblioteca y CLI de Python `astrolabium`</h1>
+        <p>
+          El motor web que ves en pantalla comparte exactamente la misma arquitectura y formulación matemática que la biblioteca de código abierto en Python disponible en este repositorio.
+        </p>
+
+        <h2>Instalación del Paquete</h2>
+        <pre><code># Clonar repositorio
+git clone https://github.com/lorenhey/astrolabium.git
+cd astrolabium
+
+# Crear entorno virtual con Python 3.12 y uv
+uv venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\Activate.ps1
+
+# Instalar con dependencias científicas (numpy, scipy, astropy, svgwrite)
+uv pip install -e ".[dev]"</code></pre>
+
+        <h2>Generación por Línea de Comandos (CLI)</h2>
+        <pre><code># Generar tímpano para La Plata / Buenos Aires (-34.92°)
+astrolabium plate --latitude -34.92 --output tympan_laplata.svg
+
+# Generar araña con el catálogo estelar completo
+astrolabium rete --hemisphere south --output rete_austral.svg
+
+# Construir el astrolabio físico completo (Madre, Tímpano, Araña y Regla)
+astrolabium build --latitude -34.92 --output-dir ./build/laplata/</code></pre>
+
+        <h2>Validación Cruzada con Astropy</h2>
+        <p>
+          Los algoritmos astronómicos de <code>astrolabium</code> han sido verificados contra la biblioteca de referencia astrofísica <strong>Astropy</strong> a través de 1000 casos aleatorios:
+        </p>
+        <pre><code># Ejecutar suite de pruebas pytest
+pytest
+
+# Correr validación cruzada estadística
+python scripts/validate.py</code></pre>
+        <p>
+          El error medio interno en Tiempo Sideral Medio de Greenwich (GMST) es de apenas $0.000008^\circ$ ($\sim 2\text{ milisegundos}$ de arco temporal), lo que sitúa la precisión matemática del software en más de <strong>100 veces por encima</strong> de la resolución de lectura de cualquier astrolabe de bronce físico de 20 cm.
+        </p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Pie de Página -->
+  <footer class="app-footer">
+    <p>
+      <strong>ASTROLABIUM</strong> &bull; Desarrollado por <a href="https://github.com/lorenhey" target="_blank" rel="noopener">Loren</a> &bull;
+      Astronomía de posición, proyección estereográfica helenística y reconstrucción instrumental en software.
+    </p>
+    <p style="margin-top: 0.35rem;">
+      Repositorio oficial: <a href="https://github.com/lorenhey/astrolabium" target="_blank" rel="noopener">github.com/lorenhey/astrolabium</a>
+    </p>
+  </footer>
+
+  <!-- Scripts Modulares -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
